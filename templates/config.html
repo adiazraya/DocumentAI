@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration - Salesforce Data Cloud Document AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .back-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .back-btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        
+        .back-btn:hover {
+            background: #5568d3;
+        }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .card {
+                padding: 15px;
+            }
+        }
+        
+        .card h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #555;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Inter', Arial, sans-serif;
+            transition: border-color 0.2s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group textarea {
+            min-height: 300px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+        }
+        
+        .help-text {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .save-btn, .reset-btn {
+                width: 100%;
+            }
+        }
+        
+        .save-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .save-btn:hover {
+            background: #45a049;
+        }
+        
+        .save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .reset-btn {
+            background: #f44336;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .reset-btn:hover {
+            background: #da190b;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box h3 {
+            color: #0066cc;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .info-box p {
+            color: #004080;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Configuration Settings</h1>
+            <a href="/" class="back-btn">← Back to Home</a>
+        </div>
+        
+        <div id="alert" class="alert"></div>
+        
+        <!-- Authentication Status & Action Section -->
+        <div class="card">
+            <h2>🔐 Salesforce Authentication</h2>
+            
+            <div class="info-box">
+                <h3>ℹ️ About Authentication</h3>
+                <p>First, configure your Salesforce credentials below and save. Then, click "Authenticate with Salesforce" to complete the OAuth login flow. Once authenticated, you can process documents on the main page.</p>
+            </div>
+            
+            <div id="auth-status-section" style="padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <span id="auth-icon" style="font-size: 20px;">⏳</span>
+                    <span id="auth-message" style="font-weight: 500; color: #555;">Checking authentication status...</span>
+                </div>
+                <button id="auth-button" style="display: none; background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">🔐 Authenticate with Salesforce</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>🔧 Authentication Configuration</h2>
+            
+            <div class="info-box">
+                <h3>ℹ️ About Authentication Settings</h3>
+                <p>Configure your Salesforce Connected App credentials here. These values are required for authentication. If left empty, the system will try to load from the .env file.</p>
+            </div>
+            
+            <form id="auth-form">
+                <div class="form-group">
+                    <label for="login_url">Login URL</label>
+                    <input type="text" id="login_url" name="login_url" placeholder="e.g., login.salesforce.com">
+                    <div class="help-text">The Salesforce login domain (e.g., login.salesforce.com or your custom domain)</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="client_id">Client ID</label>
+                    <input type="text" id="client_id" name="client_id" placeholder="Your Connected App Client ID">
+                    <div class="help-text">The Consumer Key from your Salesforce Connected App</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="client_secret">Client Secret</label>
+                    <input type="password" id="client_secret" name="client_secret" placeholder="Your Connected App Client Secret">
+                    <div class="help-text">The Consumer Secret from your Salesforce Connected App</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="api_version">API Version</label>
+                    <input type="text" id="api_version" name="api_version" placeholder="e.g., v62.0">
+                    <div class="help-text">Salesforce API version (default: v62.0)</div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>🤖 ML Model Configuration</h2>
+            
+            <div class="info-box">
+                <h3>ℹ️ About ML Model Selection</h3>
+                <p>Choose the AI model to use for document extraction. Different models may have varying performance, accuracy, and processing speed.</p>
+            </div>
+            
+            <form id="ml-model-form">
+                <div class="form-group">
+                    <label for="ml_model">ML Model</label>
+                    <select id="ml_model" name="ml_model" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        <option value="llmgateway__VertexAIGemini20Flash001">Gemini 2.0 Flash (Fast & Efficient)</option>
+                        <option value="llmgateway__OpenAIGPT4Omni_08_06">OpenAI GPT-4o (High Accuracy)</option>
+                    </select>
+                    <div class="help-text">Select the ML model for document processing</div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>☁️ Data Cloud Ingestion</h2>
+            
+            <div class="info-box">
+                <h3>ℹ️ About Data Cloud Ingestion</h3>
+                <p>Automatically ingest extracted data into Salesforce Data Cloud after processing. Configure your Data Cloud connector and object names.</p>
+                <p><strong>API Path:</strong> <code>api/v1/ingest/sources/{connector_name}/{object_name}</code></p>
+            </div>
+            
+            <form id="datacloud-form">
+                <div class="form-group">
+                    <label for="datacloud_connector_name">Data Cloud Connector Name</label>
+                    <input type="text" id="datacloud_connector_name" name="datacloud_connector_name" placeholder="e.g., ContactIngestion">
+                    <div class="help-text">The connector name in your Data Cloud ingestion path</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="datacloud_object_name">Data Cloud Object Name</label>
+                    <input type="text" id="datacloud_object_name" name="datacloud_object_name" placeholder="e.g., LeadRecord">
+                    <div class="help-text">The object name in your Data Cloud ingestion path (check your OpenAPI spec)</div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>📋 Schema Configuration</h2>
+            
+            <div class="info-box">
+                <h3>ℹ️ About Schema Configuration</h3>
+                <p>This JSON schema defines the structure of data to extract from documents. Modify it according to your needs. The default schema extracts event information and lead tables.</p>
+            </div>
+            
+            <form id="schema-form">
+                <div class="form-group">
+                    <label for="schema">JSON Schema</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                        <button type="button" onclick="window.open('/static/json-jazz.html', '_blank')" style="background: #667eea; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">🎵 Open JSON Schema Generator</button>
+                    </div>
+                    <textarea id="schema" name="schema" placeholder='{"type": "object", "properties": {...}}'></textarea>
+                    <div class="help-text">Valid JSON schema for document data extraction. Use the JSON Schema Generator tool to create schemas visually.</div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="card">
+            <div class="button-group">
+                <button class="save-btn" id="save-btn">💾 Save Configuration</button>
+                <button class="reset-btn" id="reset-btn">🔄 Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Load current configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                // Populate auth fields
+                if (config.auth) {
+                    document.getElementById('login_url').value = config.auth.login_url || '';
+                    document.getElementById('client_id').value = config.auth.client_id || '';
+                    document.getElementById('client_secret').value = config.auth.client_secret || '';
+                    document.getElementById('api_version').value = config.auth.api_version || 'v62.0';
+                }
+                
+                // Populate ML model
+                if (config.ml_model) {
+                    document.getElementById('ml_model').value = config.ml_model;
+                }
+                
+                // Populate Data Cloud configuration
+                if (config.datacloud_connector_name) {
+                    document.getElementById('datacloud_connector_name').value = config.datacloud_connector_name;
+                }
+                if (config.datacloud_object_name) {
+                    document.getElementById('datacloud_object_name').value = config.datacloud_object_name;
+                }
+                
+                // Populate schema
+                if (config.schema) {
+                    document.getElementById('schema').value = JSON.stringify(config.schema, null, 2);
+                }
+            } catch (error) {
+                showAlert('Error loading configuration: ' + error.message, 'error');
+            }
+        }
+        
+        // Save configuration
+        async function saveConfig() {
+            try {
+                const saveBtn = document.getElementById('save-btn');
+                saveBtn.disabled = true;
+                saveBtn.textContent = '💾 Saving...';
+                
+                // Parse schema JSON
+                const schemaText = document.getElementById('schema').value;
+                let schemaObj;
+                try {
+                    schemaObj = JSON.parse(schemaText);
+                } catch (e) {
+                    showAlert('Invalid JSON schema: ' + e.message, 'error');
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = '💾 Save Configuration';
+                    return;
+                }
+                
+                const config = {
+                    auth: {
+                        login_url: document.getElementById('login_url').value,
+                        client_id: document.getElementById('client_id').value,
+                        client_secret: document.getElementById('client_secret').value,
+                        api_version: document.getElementById('api_version').value || 'v62.0'
+                    },
+                    ml_model: document.getElementById('ml_model').value,
+                    datacloud_connector_name: document.getElementById('datacloud_connector_name').value || 'ContactIngestion',
+                    datacloud_object_name: document.getElementById('datacloud_object_name').value || 'LeadRecord',
+                    schema: schemaObj
+                };
+                
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+                
+                if (response.ok) {
+                    showAlert('✅ Configuration saved successfully!', 'success');
+                } else {
+                    const error = await response.json();
+                    showAlert('Error saving configuration: ' + error.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error saving configuration: ' + error.message, 'error');
+            } finally {
+                const saveBtn = document.getElementById('save-btn');
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 Save Configuration';
+            }
+        }
+        
+        // Reset to defaults
+        async function resetToDefaults() {
+            if (!confirm('Are you sure you want to reset to default configuration? This will reload defaults from .env and schema.json files.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/config/reset', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showAlert('✅ Configuration reset to defaults!', 'success');
+                    await loadConfig();
+                } else {
+                    const error = await response.json();
+                    showAlert('Error resetting configuration: ' + error.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error resetting configuration: ' + error.message, 'error');
+            }
+        }
+        
+        // Show alert message
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = 'alert ' + type;
+            alert.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Authentication functions
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                const authIcon = document.getElementById('auth-icon');
+                const authMessage = document.getElementById('auth-message');
+                const authButton = document.getElementById('auth-button');
+                
+                if (data.authenticated) {
+                    authIcon.textContent = '✅';
+                    authIcon.style.color = '#28a745';
+                    authMessage.textContent = 'Authenticated with Salesforce';
+                    authMessage.style.color = '#28a745';
+                    authButton.style.display = 'none';
+                } else {
+                    authIcon.textContent = '❌';
+                    authIcon.style.color = '#dc3545';
+                    authMessage.textContent = 'Not authenticated. Configure credentials below, save, then authenticate.';
+                    authMessage.style.color = '#dc3545';
+                    authButton.style.display = 'inline-block';
+                }
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+                const authIcon = document.getElementById('auth-icon');
+                const authMessage = document.getElementById('auth-message');
+                const authButton = document.getElementById('auth-button');
+                
+                authIcon.textContent = '❌';
+                authIcon.style.color = '#dc3545';
+                authMessage.textContent = 'Error checking authentication status';
+                authMessage.style.color = '#dc3545';
+                authButton.style.display = 'inline-block';
+            }
+        }
+        
+        // PKCE helper functions
+        function base64urlencode(str) {
+            return btoa(String.fromCharCode.apply(null, new Uint8Array(str)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+        
+        async function sha256(plain) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(plain);
+            const hash = await window.crypto.subtle.digest('SHA-256', data);
+            return base64urlencode(hash);
+        }
+        
+        async function authenticateWithSalesforce() {
+            try {
+                const response = await fetch('/api/auth-info');
+                const data = await response.json();
+                
+                if (!data.loginUrl || !data.clientId) {
+                    showAlert('❌ Salesforce configuration missing. Please save your configuration first.', 'error');
+                    return;
+                }
+                
+                // PKCE: generate code_verifier and code_challenge
+                const codeVerifier = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+                    .map(b => ('0' + b.toString(16)).slice(-2)).join('');
+                const codeChallenge = await sha256(codeVerifier);
+                
+                // Store code_verifier in sessionStorage
+                sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+                
+                const redirectUri = encodeURIComponent(`${window.location.origin}/auth/callback`);
+                const authUrl = `https://${data.loginUrl}/services/oauth2/authorize?response_type=code&client_id=${data.clientId}&redirect_uri=${redirectUri}&scope=api%20cdp_query_api%20cdp_profile_api&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+                
+                window.location.href = authUrl;
+            } catch (error) {
+                showAlert('❌ Failed to initiate authentication: ' + error.message, 'error');
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('save-btn').addEventListener('click', saveConfig);
+        document.getElementById('reset-btn').addEventListener('click', resetToDefaults);
+        document.getElementById('auth-button').addEventListener('click', authenticateWithSalesforce);
+        
+        // Load config and check auth status on page load
+        loadConfig();
+        checkAuthStatus();
+    </script>
+</body>
+</html>
+

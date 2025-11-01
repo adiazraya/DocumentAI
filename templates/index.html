@@ -8,23 +8,84 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: 'Inter', Arial, sans-serif;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            background: #f5f7fa;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 10px;
+            }
         }
         .container {
-            background-color: #f5f5f5;
+            background-color: #ffffff;
             padding: 20px;
-            border-radius: 5px;
-            margin-top: 20px;
+            border-radius: 12px;
+            margin-top: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .config-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: transform 0.2s;
+            white-space: nowrap;
+        }
+        
+        .config-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .config-button {
+                width: 100%;
+                text-align: center;
+            }
         }
         .card {
             background-color: #fff;
             padding: 20px;
-            border-radius: 4px;
+            border-radius: 12px;
             margin-top: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        @media (max-width: 768px) {
+            .card {
+                padding: 15px;
+                margin-top: 15px;
+            }
         }
         .auth-section {
             padding: 20px;
@@ -133,11 +194,93 @@
         .result-section {
             padding: 20px;
         }
-        .result-section pre {
-            padding: 10px;
+        .result-section .field-item {
+            padding: 12px;
+            margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
             background-color: #f8f8f8;
+        }
+        .result-section .field-label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 4px;
+        }
+        .result-section .field-value {
+            color: #333;
+            font-size: 15px;
+        }
+        .result-section table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .result-section table th {
+            padding: 12px;
+            border: 1px solid #000;
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            text-align: left;
+        }
+        
+        .result-section table td {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+        }
+        
+        .result-section tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .result-section pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow: auto;
+            font-size: 13px;
+            line-height: 1.5;
+            font-family: 'Courier New', Courier, monospace;
+            max-height: 400px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .result-section details {
+            margin-top: 20px;
+        }
+        
+        .result-section details summary {
+            cursor: pointer;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .result-section details summary:hover {
+            background: #e0e0e0;
+        }
+        
+        @media (max-width: 768px) {
+            .result-section {
+                padding: 10px;
+                overflow-x: auto;
+            }
+            .result-section table {
+                font-size: 13px;
+            }
+            .result-section table th,
+            .result-section table td {
+                padding: 8px;
+            }
+            .result-section pre {
+                font-size: 11px;
+                padding: 15px;
+            }
         }
         .loading {
             display: none;
@@ -167,21 +310,91 @@
             font-size: 15px;
             margin-bottom: 10px;
         }
+        .camera-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: transform 0.2s;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        @media (max-width: 768px) {
+            .camera-btn {
+                width: 100%;
+                max-width: none;
+            }
+            
+            #camera-preview {
+                max-width: 100% !important;
+            }
+        }
+        .camera-btn:hover {
+            transform: scale(1.05);
+        }
+        .camera-control-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        .camera-control-btn.cancel {
+            background: #f44336;
+        }
+        .camera-control-btn:hover {
+            opacity: 0.9;
+        }
+        #captured-image-preview {
+            max-width: 400px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 2px solid #4CAF50;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Salesforce Data Cloud - Document AI API Testbed</h1>
+        <div class="header-container">
+            <div class="logo-container">
+                <svg width="200" height="40" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Document Icon -->
+                    <rect x="5" y="5" width="20" height="28" rx="2" fill="#667eea" stroke="#4a5cc5" stroke-width="1.5"/>
+                    <line x1="9" y1="12" x2="21" y2="12" stroke="white" stroke-width="1.5"/>
+                    <line x1="9" y1="17" x2="21" y2="17" stroke="white" stroke-width="1.5"/>
+                    <line x1="9" y1="22" x2="18" y2="22" stroke="white" stroke-width="1.5"/>
+                    
+                    <!-- AgentForce Text -->
+                    <text x="32" y="25" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#2c3e50">
+                        AgentForce
+                    </text>
+                    <text x="32" y="35" font-family="Inter, Arial, sans-serif" font-size="10" fill="#667eea">
+                        Document AI
+                    </text>
+                </svg>
+            </div>
+            <a href="/config" class="config-button">⚙️ Configuration</a>
+        </div>
         
-        <!-- Authentication Section -->
-        <div class="card">
-            <div class="auth-section">
-                <h2>Authentication</h2>
-                <div id="auth-status" class="auth-status">
-                    <span id="auth-icon">⏳</span>
-                    <span id="auth-message">Checking authentication status...</span>
+        <!-- Authentication Status -->
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div style="padding: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span id="auth-icon" style="font-size: 24px;">⏳</span>
+                        <span id="auth-message" style="font-size: 16px; font-weight: 500;">Checking authentication status...</span>
+                    </div>
+                    <a href="/config" id="config-link" style="display: none; background: white; color: #667eea; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500;">⚙️ Go to Configuration</a>
                 </div>
-                <button id="auth-button" class="auth-btn" style="display: none;">🔐 Authenticate with Salesforce</button>
             </div>
         </div>
         
@@ -190,27 +403,32 @@
                 <h2>Upload Document</h2>
                 <form id="extractForm" action="/extract-data" method="POST" enctype="multipart/form-data">
                     <div class="form-group">
-                        <label for="image">Choose File</label>
+                        <label for="image">Upload or Capture Document</label>
+                        
+                        <!-- Camera Capture Option -->
+                        <div style="margin-bottom: 15px;">
+                            <button type="button" id="camera-btn" class="camera-btn">
+                                📷 Take Photo
+                            </button>
+                            <video id="camera-preview" autoplay playsinline style="display: none; width: 100%; max-width: 400px; border-radius: 8px; margin-top: 10px;"></video>
+                            <canvas id="camera-canvas" style="display: none;"></canvas>
+                            <div id="camera-controls" style="display: none; margin-top: 10px;">
+                                <button type="button" id="capture-photo-btn" class="camera-control-btn">✓ Capture</button>
+                                <button type="button" id="cancel-camera-btn" class="camera-control-btn cancel">✗ Cancel</button>
+                            </div>
+                        </div>
+                        
+                        <!-- File Upload Option -->
                         <div class="file-input-wrapper">
-                            <input type="file" name="file" id="file" accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp" required>
-                            <span class="file-name">No file chosen</span>
+                            <input type="file" name="file" id="file" accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp,image/*" capture="environment">
+                            <span class="file-name">No file chosen - or use camera above</span>
                         </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="ml-model">ML Model</label>
-                        <select name="ml_model" id="ml-model" class="ml-model-select">
-                            <option value="llmgateway__VertexAIGemini20Flash001" selected>Gemini Fast</option>
-                            <option value="llmgateway__OpenAIGPT4Omni_08_06">OpenAI GPT-4o</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="schema">Schema</label>
-                        <div class="schema-input-wrapper">
-                            <textarea name="schema" id="schema" required placeholder="Enter your JSON schema here..."></textarea>
-                            <button type="button" id="open-json-jazz" class="json-jazz-btn" onclick="window.open('/static/json-jazz.html', '_blank')">Open JSON Schema Generator</button>
-                        </div>
+                    <div style="padding: 15px; background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 8px; margin-bottom: 15px;">
+                        <p style="margin: 0; color: #004080; font-size: 14px;">
+                            ℹ️ <strong>Configuration:</strong> ML model and extraction schema are managed in the <a href="/config" style="color: #0066cc; font-weight: 600;">Configuration Page</a>. Your saved settings will be used automatically.
+                        </p>
                     </div>
 
                     <div class="preview-section" style="display: none;">
@@ -224,8 +442,11 @@
         </div>
 
         <div id="result" class="result-section" style="display: none;">
-            <h2>Analysis Result</h2>
-            <pre id="resultContent"></pre>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h2 style="margin: 0;">Analysis Result</h2>
+                <button id="copy-json-btn" class="camera-control-btn" style="background: #667eea; margin: 0;">📋 Copy JSON</button>
+            </div>
+            <div id="resultContent"></div>
         </div>
 
         <div id="loading" class="loading" style="display: none;">

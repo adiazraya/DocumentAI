@@ -1,0 +1,23 @@
+openapi: 3.0.3
+components:
+  schemas:
+    LeadRecord:
+      type: object
+      properties:
+        EventID:
+          type: string
+        eventime:
+          type: string
+          format: date-time
+        Firstname:
+          type: string
+        Lastname:
+          type: string
+        Email:
+          type: string
+          format: email
+        Date:
+          type: string
+          format: date
+        Company:
+          type: string

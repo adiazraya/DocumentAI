@@ -18,20 +18,26 @@ Youtube video walkthrough: https://youtu.be/H8cgvUP7Ytg
 
 ```
 sf-datacloud-idp-testbed/
-├── app.py                 # Main Flask application
-├── config.py              # Configuration settings (API URLs, OAuth settings)
-├── api_client.py          # API client for token management
-├── requirements.txt       # Python dependencies
-├── static/                # Static assets
-│   ├── css/               # CSS stylesheets
-│   │   └── style.css      # Main stylesheet
-│   ├── js/                # JavaScript files
-│   │   └── script.js      # Client-side functionality
-│   └── json-jazz.html     # JSON Schema Generator tool
-├── templates/             # HTML templates
-│   └── index.html         # Main interface page
-├── .env.example           # Example environment file
-└── README.md              # Project documentation
+├── app.py                     # Main Flask application with Data Cloud ingestion
+├── config.py                  # Configuration settings (API URLs, OAuth settings)
+├── config_manager.py          # Configuration management utilities
+├── api_client.py              # API client for token management
+├── schema.json                # Default JSON schema for document extraction
+├── OpenAPISpec.yaml           # Data Cloud ingestion schema definition
+├── requirements.txt           # Python dependencies
+├── README.md                  # Project documentation
+├── CONFIGURATION_GUIDE.md     # Detailed configuration guide
+├── DATACLOUD_INGESTION.md     # Data Cloud integration documentation
+├── static/                    # Static assets
+│   ├── css/                   # CSS stylesheets
+│   │   └── style.css          # Main stylesheet
+│   ├── js/                    # JavaScript files
+│   │   └── script.js          # Client-side functionality with camera support
+│   └── json-jazz.html         # JSON Schema Generator tool
+├── templates/                 # HTML templates
+│   ├── index.html             # Main interface page with camera capture
+│   └── config.html            # Configuration page with Data Cloud settings
+└── .env.example               # Example environment file
 ```
 
 ## Environment Setup
@@ -89,22 +95,153 @@ sf-datacloud-idp-testbed/
 
 ## Using the Application
 
+### Quick Start Guide
+
+#### First-Time Setup (Configuration Page)
+
+All setup is now done through the **Configuration Page** for a better user experience:
+
+1. **Open Application**: Navigate to `http://localhost:3000`
+2. **Go to Configuration**: Click the **⚙️ Configuration** button in the top-right corner
+3. **Configure Authentication**: 
+   - Enter your Salesforce LOGIN_URL (e.g., `login.salesforce.com`)
+   - Enter CLIENT_ID (Consumer Key from Connected App)
+   - Enter CLIENT_SECRET (Consumer Secret from Connected App)
+   - Set API_VERSION (default: `v62.0`)
+4. **Select ML Model**: Choose between:
+   - **Gemini 2.0 Flash** - Fast and efficient processing
+   - **OpenAI GPT-4o** - High accuracy results
+5. **Configure Schema**: Edit the JSON schema to match your document extraction needs
+6. **Save Configuration**: Click "💾 Save Configuration"
+7. **Authenticate**: Click "🔐 Authenticate with Salesforce" and complete the OAuth flow
+8. **Done!** You'll be redirected back with authentication confirmed
+
+**Note**: The configuration page creates a `user_config.json` file that takes priority over `.env` variables. This file is automatically excluded from version control.
+
+For detailed configuration instructions, see [CONFIGURATION_GUIDE.md](CONFIGURATION_GUIDE.md).
+
+### Document Processing Workflow
+
+Once configured and authenticated:
+
+1. **Upload or Capture Document**: 
+   - **📷 Take Photo**: Click to use your device camera (great for mobile!)
+   - **Upload File**: Choose from your device (PDF, PNG, JPG, JPEG, TIFF, BMP)
+2. **Process**: Click "Analyze Document" 
+3. **View Results**: All data is displayed in clean, professional tables:
+   - **Summary Table**: Non-array fields shown first (e.g., Event name, Date)
+   - **Data Tables**: Array data rendered with:
+     - Color-coded headers
+     - Alternating row colors for easy reading
+     - Hover effects for better interactivity
+   - **No JSON**: Everything is in table format for easy reading
+4. **Configuration**: Uses your saved ML model and schema automatically
+
 ### Authentication Flow (OAuth 2.0 Web Server Flow)
 
-1. **First Time Setup**: When you first visit the application, you'll see an "Authenticate with Salesforce" button
-2. **Click Authenticate**: This will redirect you to Salesforce login page
-3. **Login**: Enter your Salesforce credentials
-4. **Authorize**: Grant permissions to the connected app
-5. **Return**: You'll be redirected back to the application with a code in the URL
-6. **Token Exchange**: The backend exchanges the code for an access token and instance URL
-7. **Ready to Use**: The "Analyze Document" button will now be enabled
+Authentication is now managed entirely from the Configuration page:
 
-### Document Processing
+1. **Configure Credentials**: Set up your Salesforce Connected App details in Configuration page
+2. **Select ML Model**: Choose your preferred AI model for processing
+3. **Save Configuration**: Persist your credentials and settings
+4. **Click Authenticate**: Redirects to Salesforce login page
+5. **Login & Authorize**: Enter credentials and grant permissions
+6. **Return**: Redirected back to Configuration page with success confirmation
+7. **Ready to Use**: Return to home page and start processing documents
 
-1. Upload a document (supported formats: PDF, PNG, JPG, JPEG, TIFF, BMP)
-2. Enter a JSON schema defining the data structure you want to extract
-3. Click "Analyze Document" to process the document
-4. View the extracted structured data in the results section
+## Camera Capture Feature
+
+The application supports direct camera capture for easy document scanning:
+
+### How to Use Camera
+1. Click **📷 Take Photo** button
+2. Allow camera permissions when prompted
+3. Position your document in the camera view
+4. Click **✓ Capture** to take the photo
+5. The captured image is automatically added for processing
+
+### Camera Benefits
+- 📱 Perfect for mobile devices
+- 📄 Quick document scanning on the go
+- 🎯 Real-time preview before capture
+- ✅ Automatic file handling
+
+## Data Cloud Integration
+
+The application automatically ingests extracted data into Salesforce Data Cloud:
+
+### Automatic Ingestion
+- ☁️ **Seamless Integration**: Extracted data automatically flows to Data Cloud
+- 🔄 **Token Exchange**: Automatic conversion of Salesforce token to Data Cloud token
+- 📊 **Real-time Processing**: Data ingested immediately after extraction
+- ✅ **Status Tracking**: Ingestion success/failure reported in results
+
+### Configuration
+1. Go to **⚙️ Configuration** page
+2. Find **☁️ Data Cloud Ingestion** section
+3. Enter your **Data Cloud Connector Name** (e.g., `ContactIngestion`)
+4. Enter your **Data Cloud Object Name** (e.g., `LeadRecord`)
+5. Save configuration
+
+**API Path Format**: `api/v1/ingest/sources/{connector_name}/{object_name}`
+
+### What Gets Ingested
+- All extracted array data (e.g., LeadsTable)
+- Automatic UUID for each record (EventID)
+- Automatic timestamp (eventime)
+- All extracted fields from the document
+
+### Response Format
+Results include ingestion status:
+```json
+{
+  "Evento": {...},
+  "LeadsTable": [...],
+  "_ingestion_status": {
+    "success": true,
+    "records_ingested": 2
+  }
+}
+```
+
+For detailed information, see [DATACLOUD_INGESTION.md](DATACLOUD_INGESTION.md).
+
+## Results Display - Pure Tabular Format
+
+All results are displayed in clean, professional tables - **NO JSON format**:
+
+### Smart Table Formatting
+- **Summary Information Table**: Single-value fields displayed in a 2-column table
+  - Left column: Field name (bolded)
+  - Right column: Field value
+- **Data Tables**: Array data automatically converted to full tables with headers
+- **No Raw JSON**: Everything is formatted for easy human reading
+
+### Example Output Structure
+```
+Summary Information
+┌─────────────┬──────────────────┐
+│ Field       │ Value            │
+├─────────────┼──────────────────┤
+│ Evento      │ Tech Summit 2025 │
+│ Date        │ 01/11/2025       │
+└─────────────┴──────────────────┘
+
+LeadsTable
+┌────────────┬───────────┬──────────────────┬────────────┬──────────┐
+│ Firstname  │ Lastname  │ Email            │ Date       │ Company  │
+├────────────┼───────────┼──────────────────┼────────────┼──────────┤
+│ John       │ Doe       │ john@example.com │ 01/11/2025 │ Acme Inc │
+│ Jane       │ Smith     │ jane@example.com │ 02/11/2025 │ TechCorp │
+└────────────┴───────────┴──────────────────┴────────────┴──────────┘
+```
+
+### Table Features
+- 🎨 Color-coded headers with professional styling
+- 📊 Alternating row colors for easy reading
+- 🖱️ Hover effects for better interactivity
+- 📱 Responsive design that works on all screen sizes
+- 📋 All data in table format - easy to read and understand
 
 ## JSON Schema Format
 
@@ -196,6 +333,14 @@ The application uses OAuth 2.0 Web Server Flow (Authorization Code Grant) for au
 
 4. **File Format Issues**: Check that your document is in one of the supported formats and is not corrupted.
 
+5. **Data Cloud Ingestion Failures**: Check the `_ingestion_status` field in the response. Common causes:
+   - Invalid Data Cloud Connector Name or Object Name
+   - Incorrect path format (should be `api/v1/ingest/sources/{connector}/{object}`)
+   - Schema mismatch between extraction and Data Cloud
+   - Missing Data Cloud permissions
+   - Check server logs for detailed debug information
+   - See [DATACLOUD_INGESTION.md](DATACLOUD_INGESTION.md) for detailed troubleshooting
+
 ### Debugging
 
 The application has logging enabled. Check the console output for detailed error messages and debugging information.
@@ -213,10 +358,22 @@ This testbed is intended for development and testing purposes only. For producti
 ## API Endpoints
 
 - `GET /` - Main application interface
+- `GET /config` - Configuration page
 - `GET /api/status` - Check authentication status
 - `GET /api/auth-info` - Get OAuth configuration
+- `GET /api/config` - Get current configuration
+- `POST /api/config` - Save configuration
+- `POST /api/config/reset` - Reset configuration to defaults
+- `GET /api/schema` - Get current schema
 - `GET /auth/callback` - OAuth callback page (handles code exchange)
-- `POST /extract-data` - Process document extraction
+- `POST /extract-data` - Process document extraction + Data Cloud ingestion
+
+### Data Cloud Integration Flow
+1. **Extract Data**: `/extract-data` processes document with AI
+2. **Token Exchange**: Automatic Salesforce → Data Cloud token conversion
+3. **Data Transformation**: Adds EventID (UUID) + eventime (timestamp)
+4. **Ingestion**: POSTs data to Data Cloud streaming API
+5. **Response**: Returns extracted data + ingestion status
 
 ## Dependencies
 

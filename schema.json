@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "description": "The language will be Spanish",
+  "properties": {
+    "Evento": {
+      "type": "string",
+      "description": "Es el nombre del evento. Normalmente está en la parte superior izquierda. El idioma será Español."
+    },
+    "LeadsTable": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "Lista de los leads",
+        "properties": {
+          "Firstname": {
+            "type": "string",
+            "description": "Es el nombre del lead. Es la primera columna en la tabla. El idioma será Español."
+          },
+          "Lastname": {
+            "type": "string",
+            "description": "Es el apellido del lead. Es la segunda columna en la tabla. El idioma será Español. No intentes coincidir con nombres existentes, solo extrae el apellido."
+          },
+          "Email": {
+            "type": "string",
+            "description": "Es el correo electrónico del lead. Es la tercera columna en la tabla. El idioma será Español."
+          },
+          "Date": {
+            "type": "string",
+            "description": "Es la fecha. Es la cuarta columna en la tabla. El formato es DD/MM/YYYY."
+          },
+          "Company": {
+            "type": "string",
+            "description": "Es la empresa del lead. Es la quinta columna en la tabla. El idioma será Español."
+          }
+        }
+      },
+      "description": "Lista de los leads"
+    }
+  }
+}
