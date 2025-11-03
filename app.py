@@ -230,20 +230,42 @@ def auth_callback():
         return "Error: No code provided in callback.", 400
 
     # Render a page that grabs code_verifier from sessionStorage and POSTs it to /auth/exchange
+    # Check if user came from home page (based on referrer or can be made explicit)
     return render_template_string("""
     <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; 
+                       border-radius: 50%; width: 40px; height: 40px; 
+                       animation: spin 1s linear infinite; margin: 20px auto; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+    </head>
     <body>
-    <script>
-    const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
-    fetch('/auth/exchange', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ code: '{{code}}', code_verifier: codeVerifier })
-    }).then(() => {
-        window.location = '/config';
-    });
-    </script>
-    <p>Completing authentication...</p>
+        <h2>🔐 Completing Authentication...</h2>
+        <div class="spinner"></div>
+        <p>Please wait while we complete your authentication.</p>
+        <script>
+        const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
+        fetch('/auth/exchange', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ code: '{{code}}', code_verifier: codeVerifier })
+        }).then(response => {
+            if (response.ok) {
+                // Check if came from home page
+                const urlParams = new URLSearchParams(window.location.search);
+                const returnPath = sessionStorage.getItem('auth_return_path') || '/config';
+                sessionStorage.removeItem('auth_return_path');
+                window.location = returnPath;
+            } else {
+                document.body.innerHTML = '<h2 style="color: red;">Authentication Failed</h2><p>Please try again.</p><a href="/">Return to Home</a>';
+            }
+        }).catch(error => {
+            document.body.innerHTML = '<h2 style="color: red;">Authentication Error</h2><p>' + error.message + '</p><a href="/">Return to Home</a>';
+        });
+        </script>
     </body>
     </html>
     """, code=code)

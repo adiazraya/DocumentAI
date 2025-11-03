@@ -15,7 +15,6 @@ components:
           type: string
         Email:
           type: string
-          format: email
         Date:
           type: string
           format: date

@@ -46,7 +46,7 @@
             align-items: center;
         }
         
-        .config-button {
+        .config-button, .reauth-button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 10px 20px;
@@ -56,10 +56,32 @@
             font-weight: 500;
             transition: transform 0.2s;
             white-space: nowrap;
+            border: none;
+            cursor: pointer;
         }
         
-        .config-button:hover {
+        .config-button:hover, .reauth-button:hover {
             transform: translateY(-2px);
+        }
+        
+        #auth-status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        #auth-status-badge.authenticated {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        #auth-status-badge.not-authenticated {
+            background: #f8d7da;
+            color: #721c24;
         }
         
         @media (max-width: 768px) {
@@ -364,26 +386,32 @@
 </head>
 <body>
     <div class="container">
-        <div class="header-container">
-            <div class="logo-container">
-                <svg width="200" height="40" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Document Icon -->
-                    <rect x="5" y="5" width="20" height="28" rx="2" fill="#667eea" stroke="#4a5cc5" stroke-width="1.5"/>
-                    <line x1="9" y1="12" x2="21" y2="12" stroke="white" stroke-width="1.5"/>
-                    <line x1="9" y1="17" x2="21" y2="17" stroke="white" stroke-width="1.5"/>
-                    <line x1="9" y1="22" x2="18" y2="22" stroke="white" stroke-width="1.5"/>
-                    
-                    <!-- AgentForce Text -->
-                    <text x="32" y="25" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#2c3e50">
-                        AgentForce
-                    </text>
-                    <text x="32" y="35" font-family="Inter, Arial, sans-serif" font-size="10" fill="#667eea">
-                        Document AI
-                    </text>
-                </svg>
-            </div>
+    <div class="header-container">
+        <div class="logo-container">
+            <svg width="200" height="40" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
+                <!-- Document Icon -->
+                <rect x="5" y="5" width="20" height="28" rx="2" fill="#667eea" stroke="#4a5cc5" stroke-width="1.5"/>
+                <line x1="9" y1="12" x2="21" y2="12" stroke="white" stroke-width="1.5"/>
+                <line x1="9" y1="17" x2="21" y2="17" stroke="white" stroke-width="1.5"/>
+                <line x1="9" y1="22" x2="18" y2="22" stroke="white" stroke-width="1.5"/>
+                
+                <!-- AgentForce Text -->
+                <text x="32" y="25" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" fill="#2c3e50">
+                    AgentForce
+                </text>
+                <text x="32" y="35" font-family="Inter, Arial, sans-serif" font-size="10" fill="#667eea">
+                    Document AI
+                </text>
+            </svg>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div id="auth-status-badge" style="display: none;"></div>
+            <button id="reauth-button" class="reauth-button" style="display: none;" title="Authenticate with Salesforce">
+                🔐 Authenticate
+            </button>
             <a href="/config" class="config-button">⚙️ Configuration</a>
         </div>
+    </div>
         
         <!-- Authentication Status -->
         <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">

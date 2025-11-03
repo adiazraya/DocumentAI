@@ -31,6 +31,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check authentication status on page load
     checkAuthStatus();
     
+    // Set up re-auth button if it exists
+    const reauthButton = document.getElementById('reauth-button');
+    if (reauthButton) {
+        reauthButton.addEventListener('click', reauthenticate);
+    }
+    
     // Copy JSON button functionality
     if (copyJsonBtn) {
         copyJsonBtn.addEventListener('click', async function() {
@@ -152,16 +158,43 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/api/status');
             const data = await response.json();
             
+            const authBadge = document.getElementById('auth-status-badge');
+            const reauthButton = document.getElementById('reauth-button');
+            
             if (data.authenticated) {
                 authIcon.textContent = '✅';
                 authMessage.textContent = 'Ready to process documents';
                 configLink.style.display = 'none';
                 analyzeBtn.disabled = false;
+                
+                // Show authenticated badge
+                if (authBadge) {
+                    authBadge.style.display = 'flex';
+                    authBadge.className = 'authenticated';
+                    authBadge.innerHTML = '✓ Authenticated';
+                }
+                
+                // Hide re-auth button
+                if (reauthButton) {
+                    reauthButton.style.display = 'none';
+                }
             } else {
                 authIcon.textContent = '⚠️';
                 authMessage.textContent = 'Not authenticated. Please configure and authenticate first.';
                 configLink.style.display = 'inline-block';
                 analyzeBtn.disabled = true;
+                
+                // Show not authenticated badge
+                if (authBadge) {
+                    authBadge.style.display = 'flex';
+                    authBadge.className = 'not-authenticated';
+                    authBadge.innerHTML = '✗ Not Authenticated';
+                }
+                
+                // Show re-auth button
+                if (reauthButton) {
+                    reauthButton.style.display = 'block';
+                }
             }
         } catch (error) {
             console.error('Error checking auth status:', error);
@@ -169,6 +202,80 @@ document.addEventListener('DOMContentLoaded', function() {
             authMessage.textContent = 'Error checking authentication status';
             configLink.style.display = 'inline-block';
             analyzeBtn.disabled = true;
+            
+            // On error, show re-auth option
+            const reauthButton = document.getElementById('reauth-button');
+            if (reauthButton) {
+                reauthButton.style.display = 'block';
+            }
+        }
+    }
+    
+    // Re-authentication function
+    async function reauthenticate() {
+        try {
+            // Get auth info
+            const response = await fetch('/api/auth-info');
+            const authInfo = await response.json();
+            
+            if (!authInfo.loginUrl || !authInfo.clientId) {
+                alert('Authentication not configured. Please go to Configuration page to set up Salesforce credentials.');
+                window.location.href = '/config';
+                return;
+            }
+            
+            // Generate PKCE challenge
+            function generateRandomString(length) {
+                const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+                let result = '';
+                const values = new Uint8Array(length);
+                crypto.getRandomValues(values);
+                for (let i = 0; i < length; i++) {
+                    result += charset[values[i] % charset.length];
+                }
+                return result;
+            }
+
+            async function sha256(plain) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(plain);
+                return await crypto.subtle.digest('SHA-256', data);
+            }
+
+            function base64urlencode(buffer) {
+                let str = '';
+                const bytes = new Uint8Array(buffer);
+                for (let i = 0; i < bytes.length; i++) {
+                    str += String.fromCharCode(bytes[i]);
+                }
+                return btoa(str)
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=+$/, '');
+            }
+
+            const codeVerifier = generateRandomString(128);
+            const hashed = await sha256(codeVerifier);
+            const codeChallenge = base64urlencode(hashed);
+
+            sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+            // Store return path so we know to return to home page after auth
+            sessionStorage.setItem('auth_return_path', '/');
+
+            const redirectUri = `${window.location.origin}/auth/callback`;
+            const authUrl = `${authInfo.loginUrl}/services/oauth2/authorize?` +
+                `response_type=code&` +
+                `client_id=${encodeURIComponent(authInfo.clientId)}&` +
+                `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+                `code_challenge=${codeChallenge}&` +
+                `code_challenge_method=S256`;
+
+            // Redirect to Salesforce for authentication
+            window.location.href = authUrl;
+            
+        } catch (error) {
+            console.error('Error during re-authentication:', error);
+            alert('Error initiating authentication. Please check your configuration.');
         }
     }
 
