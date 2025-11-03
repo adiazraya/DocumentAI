@@ -259,10 +259,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const codeChallenge = base64urlencode(hashed);
 
             sessionStorage.setItem('pkce_code_verifier', codeVerifier);
-            // Store return path so we know to return to home page after auth
-            sessionStorage.setItem('auth_return_path', '/');
 
-            const redirectUri = `${window.location.origin}/auth/callback`;
+            // Use query parameter to indicate return destination
+            const redirectUri = `${window.location.origin}/auth/callback?from=home`;
             const authUrl = `${authInfo.loginUrl}/services/oauth2/authorize?` +
                 `response_type=code&` +
                 `client_id=${encodeURIComponent(authInfo.clientId)}&` +

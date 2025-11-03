@@ -226,49 +226,93 @@ def get_auth_info():
 @app.route('/auth/callback')
 def auth_callback():
     code = request.args.get('code')
+    from_page = request.args.get('from', 'config')  # 'home' or 'config'
+    
     if not code:
-        return "Error: No code provided in callback.", 400
+        return render_template_string("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Authentication Error</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                .error { color: #d32f2f; margin: 20px 0; }
+                a { color: #667eea; text-decoration: none; font-weight: 600; padding: 10px 20px; 
+                    background: #f0f0f0; border-radius: 8px; display: inline-block; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <h1 class="error">❌ Authentication Error</h1>
+            <p>No authorization code received from Salesforce.</p>
+            <a href="/">← Return to Home</a>
+        </body>
+        </html>
+        """)
 
+    # Determine return path based on 'from' parameter
+    return_path = '/' if from_page == 'home' else '/config'
+    
     # Render a page that grabs code_verifier from sessionStorage and POSTs it to /auth/exchange
-    # Check if user came from home page (based on referrer or can be made explicit)
     return render_template_string("""
+    <!DOCTYPE html>
     <html>
     <head>
+        <title>Completing Authentication</title>
         <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f7fa; }
+            .container { background: white; padding: 40px; border-radius: 12px; 
+                        max-width: 500px; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+            h2 { color: #667eea; margin-bottom: 20px; }
             .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #667eea; 
                        border-radius: 50%; width: 40px; height: 40px; 
                        animation: spin 1s linear infinite; margin: 20px auto; }
             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            .error { color: #d32f2f; }
+            a { color: #667eea; text-decoration: none; font-weight: 600; }
         </style>
     </head>
     <body>
-        <h2>🔐 Completing Authentication...</h2>
-        <div class="spinner"></div>
-        <p>Please wait while we complete your authentication.</p>
+        <div class="container">
+            <h2>🔐 Completing Authentication...</h2>
+            <div class="spinner"></div>
+            <p>Please wait while we complete your authentication.</p>
+        </div>
         <script>
         const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
-        fetch('/auth/exchange', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ code: '{{code}}', code_verifier: codeVerifier })
-        }).then(response => {
-            if (response.ok) {
-                // Check if came from home page
-                const urlParams = new URLSearchParams(window.location.search);
-                const returnPath = sessionStorage.getItem('auth_return_path') || '/config';
-                sessionStorage.removeItem('auth_return_path');
-                window.location = returnPath;
-            } else {
-                document.body.innerHTML = '<h2 style="color: red;">Authentication Failed</h2><p>Please try again.</p><a href="/">Return to Home</a>';
-            }
-        }).catch(error => {
-            document.body.innerHTML = '<h2 style="color: red;">Authentication Error</h2><p>' + error.message + '</p><a href="/">Return to Home</a>';
-        });
+        if (!codeVerifier) {
+            document.body.innerHTML = '<div class="container"><h2 class="error">Authentication Error</h2><p>Session data lost. Please try again.</p><a href="/">Return to Home</a></div>';
+        } else {
+            fetch('/auth/exchange', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ code: '{{code}}', code_verifier: codeVerifier })
+            }).then(response => {
+                if (response.ok) {
+                    // Success! Show message and redirect
+                    document.querySelector('.container').innerHTML = 
+                        '<h2 style="color: #2e7d32;">✓ Authentication Successful!</h2>' +
+                        '<p>Redirecting you back...</p>' +
+                        '<div class="spinner"></div>';
+                    setTimeout(() => {
+                        window.location = '{{return_path}}';
+                    }, 1500);
+                } else {
+                    document.querySelector('.container').innerHTML = 
+                        '<h2 class="error">❌ Authentication Failed</h2>' +
+                        '<p>Please try again.</p>' +
+                        '<a href="/">Return to Home</a>';
+                }
+            }).catch(error => {
+                document.querySelector('.container').innerHTML = 
+                    '<h2 class="error">❌ Authentication Error</h2>' +
+                    '<p>' + error.message + '</p>' +
+                    '<a href="/">Return to Home</a>';
+            });
+        }
         </script>
     </body>
     </html>
-    """, code=code)
+    """, code=code, return_path=return_path)
 
 @app.route('/auth/exchange', methods=['POST'])
 def auth_exchange():
