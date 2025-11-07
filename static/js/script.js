@@ -160,6 +160,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const authBadge = document.getElementById('auth-status-badge');
             const reauthButton = document.getElementById('reauth-button');
+            const orgDisplay = document.getElementById('org-display');
+            const orgName = document.getElementById('org-name');
+            
+            // Update org display
+            if (orgDisplay && orgName && data.currentOrg) {
+                orgDisplay.style.display = 'flex';
+                orgName.textContent = data.currentOrg;
+            }
             
             if (data.authenticated) {
                 authIcon.textContent = '✅';

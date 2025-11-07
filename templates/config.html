@@ -248,6 +248,42 @@
         
         <div id="alert" class="alert"></div>
         
+        <!-- Org Selector Section -->
+        <div class="card">
+            <h2>🏢 Salesforce Org Selection</h2>
+            
+            <div class="info-box">
+                <h3>ℹ️ About Org Management</h3>
+                <p>Manage multiple Salesforce org configurations. Select an org to work with, or create a new one. Each org has its own credentials, settings, and authentication.</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="org-selector">Current Org</label>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <select id="org-selector" style="flex: 1; min-width: 200px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        <option value="">Loading orgs...</option>
+                    </select>
+                    <button id="switch-org-btn" class="save-btn" style="padding: 12px 20px; margin: 0;">🔄 Switch</button>
+                    <button id="new-org-btn" class="save-btn" style="padding: 12px 20px; margin: 0; background: #667eea;">➕ New Org</button>
+                    <button id="delete-org-btn" class="reset-btn" style="padding: 12px 20px; margin: 0;">🗑️ Delete</button>
+                </div>
+                <div class="help-text">Select which Salesforce org you want to work with</div>
+            </div>
+            
+            <div id="new-org-form" style="display: none; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <h3 style="margin-bottom: 15px; color: #333;">Create New Org</h3>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="new-org-name">Org Name</label>
+                    <input type="text" id="new-org-name" placeholder="e.g., production, sandbox, dev" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;">
+                    <div class="help-text">A unique name to identify this org (no spaces or special characters)</div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="create-org-btn" class="save-btn" style="padding: 10px 20px; margin: 0;">✓ Create</button>
+                    <button id="cancel-new-org-btn" class="reset-btn" style="padding: 10px 20px; margin: 0; background: #999;">✗ Cancel</button>
+                </div>
+            </div>
+        </div>
+        
         <!-- Authentication Status & Action Section -->
         <div class="card">
             <h2>🔐 Salesforce Authentication</h2>
@@ -374,6 +410,41 @@
     </div>
     
     <script>
+        let currentOrg = null;
+        
+        // Load list of orgs
+        async function loadOrgs() {
+            try {
+                const response = await fetch('/api/orgs');
+                const data = await response.json();
+                
+                const selector = document.getElementById('org-selector');
+                selector.innerHTML = '';
+                
+                if (data.orgs && data.orgs.length > 0) {
+                    data.orgs.forEach(org => {
+                        const option = document.createElement('option');
+                        option.value = org;
+                        option.textContent = org;
+                        if (org === data.currentOrg) {
+                            option.selected = true;
+                        }
+                        selector.appendChild(option);
+                    });
+                    currentOrg = data.currentOrg;
+                } else {
+                    selector.innerHTML = '<option value="">No orgs configured</option>';
+                }
+                
+                // Load configuration for current org
+                if (currentOrg) {
+                    await loadConfig();
+                }
+            } catch (error) {
+                showAlert('Error loading orgs: ' + error.message, 'error');
+            }
+        }
+        
         // Load current configuration
         async function loadConfig() {
             try {
@@ -578,13 +649,137 @@
             }
         }
         
+        // Switch org
+        async function switchOrg() {
+            const selectedOrg = document.getElementById('org-selector').value;
+            if (!selectedOrg) {
+                showAlert('Please select an org', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/orgs/switch/${selectedOrg}`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showAlert(`✅ Switched to org "${selectedOrg}"`, 'success');
+                    currentOrg = selectedOrg;
+                    await loadConfig();
+                    await checkAuthStatus();
+                } else {
+                    const error = await response.json();
+                    showAlert('Error switching org: ' + error.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error switching org: ' + error.message, 'error');
+            }
+        }
+        
+        // Show new org form
+        function showNewOrgForm() {
+            document.getElementById('new-org-form').style.display = 'block';
+            document.getElementById('new-org-name').value = '';
+            document.getElementById('new-org-name').focus();
+        }
+        
+        // Hide new org form
+        function hideNewOrgForm() {
+            document.getElementById('new-org-form').style.display = 'none';
+        }
+        
+        // Create new org
+        async function createNewOrg() {
+            const orgName = document.getElementById('new-org-name').value.trim();
+            if (!orgName) {
+                showAlert('Please enter an org name', 'error');
+                return;
+            }
+            
+            // Validate org name (no spaces or special characters)
+            if (!/^[a-zA-Z0-9_-]+$/.test(orgName)) {
+                showAlert('Org name can only contain letters, numbers, hyphens, and underscores', 'error');
+                return;
+            }
+            
+            try {
+                // Create with default configuration
+                const defaultConfig = {
+                    auth: {
+                        login_url: '',
+                        client_id: '',
+                        client_secret: '',
+                        api_version: 'v62.0'
+                    },
+                    ml_model: 'llmgateway__VertexAIGemini20Flash001',
+                    datacloud_connector_name: 'ContactIngestion',
+                    datacloud_object_name: 'LeadRecord',
+                    schema: {}
+                };
+                
+                const response = await fetch(`/api/orgs/${orgName}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(defaultConfig)
+                });
+                
+                if (response.ok) {
+                    showAlert(`✅ Org "${orgName}" created successfully!`, 'success');
+                    hideNewOrgForm();
+                    await loadOrgs();
+                    // Switch to the new org
+                    document.getElementById('org-selector').value = orgName;
+                    await switchOrg();
+                } else {
+                    const error = await response.json();
+                    showAlert('Error creating org: ' + error.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error creating org: ' + error.message, 'error');
+            }
+        }
+        
+        // Delete org
+        async function deleteOrg() {
+            const selectedOrg = document.getElementById('org-selector').value;
+            if (!selectedOrg) {
+                showAlert('Please select an org to delete', 'error');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete org "${selectedOrg}"? This will also delete its authentication token.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/orgs/${selectedOrg}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showAlert(`✅ Org "${selectedOrg}" deleted successfully!`, 'success');
+                    await loadOrgs();
+                } else {
+                    const error = await response.json();
+                    showAlert('Error deleting org: ' + error.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error deleting org: ' + error.message, 'error');
+            }
+        }
+        
         // Event listeners
         document.getElementById('save-btn').addEventListener('click', saveConfig);
         document.getElementById('reset-btn').addEventListener('click', resetToDefaults);
         document.getElementById('auth-button').addEventListener('click', authenticateWithSalesforce);
+        document.getElementById('switch-org-btn').addEventListener('click', switchOrg);
+        document.getElementById('new-org-btn').addEventListener('click', showNewOrgForm);
+        document.getElementById('create-org-btn').addEventListener('click', createNewOrg);
+        document.getElementById('cancel-new-org-btn').addEventListener('click', hideNewOrgForm);
+        document.getElementById('delete-org-btn').addEventListener('click', deleteOrg);
         
-        // Load config and check auth status on page load
-        loadConfig();
+        // Load orgs and check auth status on page load
+        loadOrgs();
         checkAuthStatus();
     </script>
 </body>

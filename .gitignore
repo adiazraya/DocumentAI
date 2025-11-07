@@ -22,6 +22,8 @@ access-token.secret
 
 # User configuration
 user_config.json
+orgs_config.json
+access-token-*.secret
 
 # IDE
 .vscode/

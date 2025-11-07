@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, send_file, redirect, render_template_string
+from flask import Flask, request, jsonify, render_template, send_file, redirect, render_template_string, make_response
 import subprocess
 import json
 import requests
@@ -9,17 +9,30 @@ import uuid
 from datetime import datetime, timezone
 
 # Import configuration
-from config import DEFAULT_ML_MODEL, LOGIN_URL, CLIENT_ID, CLIENT_SECRET, API_VERSION, TOKEN_FILE, SCHEMA_CONFIG
+from config import DEFAULT_ML_MODEL, API_VERSION, SCHEMA_CONFIG
 from api_client import APIClient
-from config_manager import load_user_config, save_user_config, initialize_config, get_default_schema
+from config_manager import (
+    load_user_config, save_user_config, initialize_config, get_default_schema,
+    get_current_org_name, set_current_org, get_org_config, list_orgs,
+    create_or_update_org, delete_org, get_org_token_file
+)
 
 app = Flask("Salesforce Data Cloud Document AI test platform")
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Initialize API client
-api_client = APIClient()
+# Helper function to get current org from cookie
+def get_org_from_request():
+    """Get current org from cookie or default"""
+    cookie_org = request.cookies.get('current_org')
+    return get_current_org_name(cookie_org)
+
+# Helper function to get API client for current org
+def get_api_client():
+    """Get API client configured for current org"""
+    org_name = get_org_from_request()
+    return APIClient(org_name)
 
 # Helper function to get Data Cloud token
 def get_datacloud_token(salesforce_access_token, instance_url):
@@ -195,12 +208,15 @@ def home():
 def check_auth_status():
     """Check authentication status"""
     try:
+        api_client = get_api_client()
         has_token = api_client.is_authenticated()
+        org_name = get_org_from_request()
         
         return jsonify({
             'serverTime': datetime.now().isoformat(),
             'status': 'running',
             'authenticated': has_token,
+            'currentOrg': org_name,
             'message': 'Access token found' if has_token else 'Access token not found. Please authenticate first.'
         })
     except Exception as e:
@@ -208,19 +224,31 @@ def check_auth_status():
             'serverTime': datetime.now().isoformat(),
             'status': 'error',
             'authenticated': False,
+            'currentOrg': get_org_from_request(),
             'error': 'Failed to check authentication status',
             'details': str(e)
         }), 500
 
 @app.route('/api/auth-info', methods=['GET'])
 def get_auth_info():
-    """Get authentication configuration"""
-    if not LOGIN_URL or not CLIENT_ID:
-        return jsonify({'error': 'Salesforce config missing on server'}), 500
+    """Get authentication configuration for current org"""
+    org_name = get_org_from_request()
+    org_config = get_org_config(org_name)
+    
+    if not org_config:
+        return jsonify({'error': 'No org configured'}), 500
+    
+    auth_config = org_config.get('auth', {})
+    login_url = auth_config.get('login_url')
+    client_id = auth_config.get('client_id')
+    
+    if not login_url or not client_id:
+        return jsonify({'error': 'Salesforce config missing for current org'}), 500
     
     return jsonify({
-        'loginUrl': LOGIN_URL,
-        'clientId': CLIENT_ID,
+        'loginUrl': login_url,
+        'clientId': client_id,
+        'orgName': org_name
     })
 
 @app.route('/auth/callback')
@@ -322,13 +350,28 @@ def auth_exchange():
     if not code or not code_verifier:
         return "Missing code or code_verifier", 400
 
+    # Get current org configuration
+    org_name = get_org_from_request()
+    org_config = get_org_config(org_name)
+    
+    if not org_config:
+        return "No org configured", 400
+    
+    auth_config = org_config.get('auth', {})
+    login_url = auth_config.get('login_url')
+    client_id = auth_config.get('client_id')
+    client_secret = auth_config.get('client_secret')
+    
+    if not login_url or not client_id or not client_secret:
+        return "Incomplete auth configuration for current org", 400
+
     redirect_uri = f"{request.url_root.rstrip('/')}/auth/callback"
-    token_url = f"https://{LOGIN_URL}/services/oauth2/token"
+    token_url = f"https://{login_url}/services/oauth2/token"
     payload = {
         "grant_type": "authorization_code",
         "code": code,
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
+        "client_id": client_id,
+        "client_secret": client_secret,
         "redirect_uri": redirect_uri,
         "code_verifier": code_verifier
     }
@@ -345,7 +388,8 @@ def auth_exchange():
         return f"Error exchanging code for token: {resp.text}", 400
 
     token_data = resp.json()
-    with open(TOKEN_FILE, "w") as f:
+    token_file = get_org_token_file(org_name)
+    with open(token_file, "w") as f:
         json.dump({
             "access_token": token_data["access_token"],
             "instance_url": token_data["instance_url"]
@@ -366,7 +410,8 @@ def save_token():
                 'error': 'Access token is required'
             }), 400
         
-        # Save the access token
+        # Save the access token for current org
+        api_client = get_api_client()
         api_client.save_access_token(access_token)
         
         print('Access token saved successfully')
@@ -386,6 +431,9 @@ def save_token():
 @app.route('/extract-data', methods=['POST'])
 def extract_data():
     try:
+        # Get API client for current org
+        api_client = get_api_client()
+        
         if not api_client.is_authenticated():
             return jsonify({'error': 'Authentication required. Please authenticate with Salesforce first.'}), 401
 
@@ -401,10 +449,16 @@ def extract_data():
         if not allowed_file(file.filename):
             return jsonify({'error': 'Invalid file type. Allowed types are: PDF and images (PNG, JPG, JPEG, TIFF, BMP)'}), 400
 
-        # Load schema and ML model from configuration
-        config = load_user_config()
+        # Load schema and ML model from current org configuration
+        org_name = get_org_from_request()
+        config = get_org_config(org_name)
+        
+        if not config:
+            return jsonify({'error': 'No org configured. Please configure an org in the Configuration page.'}), 400
+        
         schema_obj = config.get('schema', get_default_schema())
         ml_model = config.get('ml_model', DEFAULT_ML_MODEL)
+        api_version = config.get('auth', {}).get('api_version', 'v62.0')
         
         if not schema_obj:
             return jsonify({'error': 'No schema configured. Please configure a schema in the Configuration page.'}), 400
@@ -414,7 +468,7 @@ def extract_data():
 
         # Use dynamic instance_url from token file
         instance_url = api_client.get_instance_url()
-        url = f"{instance_url}/services/data/{API_VERSION}/ssot/document-processing/actions/extract-data"
+        url = f"{instance_url}/services/data/{api_version}/ssot/document-processing/actions/extract-data"
 
         payload = {
             "mlModel": ml_model,
@@ -623,6 +677,125 @@ def get_schema():
         config = load_user_config()
         schema = config.get('schema', get_default_schema())
         return jsonify(schema)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Org management routes
+@app.route('/api/orgs', methods=['GET'])
+def get_orgs():
+    """Get list of all configured orgs"""
+    try:
+        orgs = list_orgs()
+        current_org = get_org_from_request()
+        return jsonify({
+            'orgs': orgs,
+            'currentOrg': current_org
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/orgs/<org_name>', methods=['GET'])
+def get_org(org_name):
+    """Get configuration for a specific org"""
+    try:
+        config = get_org_config(org_name)
+        if not config:
+            return jsonify({'error': 'Org not found'}), 404
+        
+        # Don't send full client_secret, just indicate if it's set
+        response_config = {
+            'auth': {
+                'login_url': config.get('auth', {}).get('login_url', ''),
+                'client_id': config.get('auth', {}).get('client_id', ''),
+                'client_secret_set': bool(config.get('auth', {}).get('client_secret')),
+                'api_version': config.get('auth', {}).get('api_version', 'v62.0')
+            },
+            'ml_model': config.get('ml_model', DEFAULT_ML_MODEL),
+            'datacloud_connector_name': config.get('datacloud_connector_name', 'ContactIngestion'),
+            'datacloud_object_name': config.get('datacloud_object_name', 'LeadRecord'),
+            'schema': config.get('schema', {})
+        }
+        
+        return jsonify(response_config)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/orgs/<org_name>', methods=['POST', 'PUT'])
+def create_or_update_org_route(org_name):
+    """Create or update an org configuration"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No configuration data provided'}), 400
+        
+        # Validate schema if provided
+        if 'schema' in data:
+            if not isinstance(data['schema'], dict):
+                return jsonify({'error': 'Schema must be a valid JSON object'}), 400
+        
+        # Get existing config to preserve client_secret if not provided
+        existing_config = get_org_config(org_name)
+        if existing_config and 'auth' in data:
+            # If client_secret is not provided or empty, keep the existing one
+            if not data['auth'].get('client_secret'):
+                data['auth']['client_secret'] = existing_config.get('auth', {}).get('client_secret', '')
+        
+        # Save configuration
+        success = create_or_update_org(org_name, data)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Org "{org_name}" saved successfully'
+            })
+        else:
+            return jsonify({'error': 'Failed to save org configuration'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/orgs/<org_name>', methods=['DELETE'])
+def delete_org_route(org_name):
+    """Delete an org configuration"""
+    try:
+        success = delete_org(org_name)
+        
+        if success:
+            # Also delete the token file
+            token_file = get_org_token_file(org_name)
+            if os.path.exists(token_file):
+                os.remove(token_file)
+            
+            return jsonify({
+                'success': True,
+                'message': f'Org "{org_name}" deleted successfully'
+            })
+        else:
+            return jsonify({'error': 'Org not found or failed to delete'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/orgs/switch/<org_name>', methods=['POST'])
+def switch_org(org_name):
+    """Switch to a different org"""
+    try:
+        success = set_current_org(org_name)
+        
+        if success:
+            # Create response with cookie
+            response = make_response(jsonify({
+                'success': True,
+                'message': f'Switched to org "{org_name}"',
+                'currentOrg': org_name
+            }))
+            # Set cookie for 30 days
+            response.set_cookie('current_org', org_name, max_age=30*24*60*60)
+            return response
+        else:
+            return jsonify({'error': 'Org not found'}), 404
+            
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

@@ -1,6 +1,15 @@
-# Heroku Deployment Guide
+# Heroku Deployment Guide - Multi-Org Version
 
-This guide will walk you through deploying the Document AI application to Heroku.
+This guide will walk you through deploying the Document AI application with multi-org support to Heroku.
+
+## 🆕 Multi-Org Feature
+
+The application now supports multiple Salesforce org configurations. You can:
+- Configure multiple orgs (production, sandbox, dev, etc.)
+- Switch between orgs with a single click
+- Each org maintains separate authentication and settings
+
+See `MULTI_ORG_GUIDE.md` for detailed multi-org documentation.
 
 ## Prerequisites
 
@@ -257,21 +266,37 @@ heroku config:set VARIABLE_NAME=value
 heroku config:unset VARIABLE_NAME
 ```
 
-## Database & File Storage
+## Database & File Storage (Multi-Org Considerations)
 
 **Important Notes:**
 
-1. **Ephemeral Filesystem**: Heroku uses an ephemeral filesystem. Files like `access-token.secret` and `user_config.json` will be lost on dyno restart.
+1. **Ephemeral Filesystem**: Heroku uses an ephemeral filesystem. Files will be lost on dyno restart:
+   - `orgs_config.json` - All org configurations
+   - `access-token-*.secret` - All org-specific authentication tokens
 
-2. **Solution**: The app stores configuration in `user_config.json` which persists during the dyno's lifetime but will reset on restart. For production, consider:
-   - Using Heroku Postgres for configuration storage
-   - Using Heroku Redis for session/token storage
-   - Re-authenticating on each session
+2. **Impact on Multi-Org System**:
+   - All configured orgs will be lost on dyno restart
+   - All authentication tokens for all orgs will be lost
+   - Users will need to reconfigure and re-authenticate after each restart
 
-3. **Current Behavior**: Users will need to:
-   - Configure the app after first deployment
-   - Re-authenticate with Salesforce if the dyno restarts
-   - Configuration persists during active sessions
+3. **Solution Options for Production**:
+   - **Option A**: Use Heroku Postgres to store org configurations and tokens
+   - **Option B**: Use environment variables for a single default org (limits multi-org benefits)
+   - **Option C**: Accept re-configuration after restarts (acceptable for demos/testing)
+   - **Option D**: Use Heroku Redis for configuration persistence
+
+4. **Current Behavior**: 
+   - Configure orgs through the UI after deployment
+   - Authenticate each org
+   - Configuration persists during the dyno's lifetime
+   - After dyno restart (typically every 24 hours on free tier):
+     - All org configurations will be lost
+     - Need to reconfigure and re-authenticate all orgs
+
+5. **Recommended for Production**:
+   - Upgrade to at least Hobby dyno ($7/month) for more stability
+   - Consider implementing database-backed configuration storage
+   - Or configure one "primary" org via environment variables as fallback
 
 ## Scaling (If Needed)
 
