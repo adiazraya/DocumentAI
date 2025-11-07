@@ -639,20 +639,39 @@ def save_config():
             if not isinstance(data['schema'], dict):
                 return jsonify({'error': 'Schema must be a valid JSON object'}), 400
         
-        # Save configuration
-        success = save_user_config(data)
+        # Get or create a current org
+        org_name = get_org_from_request()
+        
+        # If no org exists, create a default one
+        if not org_name:
+            org_name = "default"
+            logging.info("No org exists, creating default org")
+        
+        # Save configuration to the current/default org
+        success = create_or_update_org(org_name, data)
         
         if success:
+            # Set as current org if it wasn't already
+            set_current_org(org_name)
+            
             # Reload config module to pick up new values
             import importlib
             import config
             importlib.reload(config)
             
-            return jsonify({'success': True, 'message': 'Configuration saved successfully'})
+            response = make_response(jsonify({
+                'success': True, 
+                'message': 'Configuration saved successfully',
+                'org': org_name
+            }))
+            # Set cookie to remember this org
+            response.set_cookie('current_org', org_name, max_age=30*24*60*60)
+            return response
         else:
             return jsonify({'error': 'Failed to save configuration'}), 500
             
     except Exception as e:
+        logging.error(f"Error saving configuration: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/config/reset', methods=['POST'])
