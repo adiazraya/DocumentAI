@@ -727,13 +727,56 @@ def test_endpoint():
         test_url = f"{instance_url}/services/data/{api_version}/ssot/document-processing"
         response = requests.get(test_url, headers=headers, timeout=10)
         
+        # Generate curl commands for manual testing
+        curl_test = f"curl -X GET \"{test_url}\" \\\n  -H \"Authorization: Bearer {access_token[:20]}...{access_token[-10:]}\""
+        curl_full = f"curl -X POST \"{url}\" \\\n  -H \"Authorization: Bearer {access_token[:20]}...{access_token[-10:]}\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{{\"mlModel\":\"llmgateway__VertexAIGemini20Flash001\",\"schemaConfig\":\"...\",\"files\":[...]}}'"
+        
         return jsonify({
             'instance_url': instance_url,
             'api_version': api_version,
             'endpoint_url': url,
             'test_status': response.status_code,
             'test_response': response.text[:500] if response.text else 'No response body',
-            'message': 'Check the test_status. 404 means Document AI is not available in this org.'
+            'message': 'Check the test_status. 404 means Document AI is not available in this org.',
+            'curl_test_command': curl_test,
+            'curl_full_command': curl_full
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/get-token-info', methods=['GET'])
+def get_token_info():
+    """Get token info for manual curl testing"""
+    try:
+        api_client = get_api_client()
+        
+        if not api_client.is_authenticated():
+            return jsonify({'error': 'Not authenticated'}), 401
+        
+        org_name = get_org_from_request()
+        config = get_org_config(org_name)
+        api_version = config.get('auth', {}).get('api_version', 'v62.0')
+        
+        instance_url = api_client.get_instance_url()
+        access_token = api_client.get_access_token()
+        
+        # URLs
+        test_url = f"{instance_url}/services/data/{api_version}/ssot/document-processing"
+        full_url = f"{instance_url}/services/data/{api_version}/ssot/document-processing/actions/extract-data"
+        
+        return jsonify({
+            'org': org_name,
+            'instance_url': instance_url,
+            'api_version': api_version,
+            'access_token': access_token,
+            'test_endpoint': test_url,
+            'full_endpoint': full_url,
+            'curl_commands': {
+                'test_get': f'curl -X GET "{test_url}" -H "Authorization: Bearer {access_token}"',
+                'test_post': f'curl -X POST "{full_url}" -H "Authorization: Bearer {access_token}" -H "Content-Type: application/json" -d \'{{}}\'',
+            },
+            'note': 'Copy these curl commands to test directly from your terminal'
         })
         
     except Exception as e:
