@@ -699,6 +699,46 @@ def get_schema():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/test-endpoint', methods=['GET'])
+def test_endpoint():
+    """Test if Document AI endpoint is accessible"""
+    try:
+        api_client = get_api_client()
+        
+        if not api_client.is_authenticated():
+            return jsonify({'error': 'Not authenticated'}), 401
+        
+        org_name = get_org_from_request()
+        config = get_org_config(org_name)
+        api_version = config.get('auth', {}).get('api_version', 'v62.0')
+        
+        instance_url = api_client.get_instance_url()
+        access_token = api_client.get_access_token()
+        
+        # Try to call the endpoint with a minimal request to check if it exists
+        url = f"{instance_url}/services/data/{api_version}/ssot/document-processing/actions/extract-data"
+        
+        headers = {
+            'Authorization': f'Bearer {access_token}'
+        }
+        
+        # Make a simple GET request to check if the endpoint exists
+        # (POST would require a valid payload)
+        test_url = f"{instance_url}/services/data/{api_version}/ssot/document-processing"
+        response = requests.get(test_url, headers=headers, timeout=10)
+        
+        return jsonify({
+            'instance_url': instance_url,
+            'api_version': api_version,
+            'endpoint_url': url,
+            'test_status': response.status_code,
+            'test_response': response.text[:500] if response.text else 'No response body',
+            'message': 'Check the test_status. 404 means Document AI is not available in this org.'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Org management routes
 @app.route('/api/orgs', methods=['GET'])
 def get_orgs():
