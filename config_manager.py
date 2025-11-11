@@ -129,7 +129,7 @@ def initialize_config() -> Dict[str, Any]:
                 "login_url": os.environ.get("LOGIN_URL", ""),
                 "client_id": os.environ.get("CLIENT_ID", ""),
                 "client_secret": os.environ.get("CLIENT_SECRET", ""),
-                "api_version": os.environ.get("API_VERSION", "v62.0")
+                "api_version": os.environ.get("API_VERSION", "v63.0")
             },
             "ml_model": "llmgateway__VertexAIGemini20Flash001",
             "datacloud_connector_name": "ContactIngestion",

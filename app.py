@@ -606,6 +606,13 @@ def get_config():
         # If config is empty, initialize with defaults
         if not config:
             config = initialize_config()
+            # Reload after initialization
+            config = load_user_config()
+        
+        # Get default schema if no schema exists
+        schema = config.get('schema', {})
+        if not schema:
+            schema = get_default_schema()
         
         # Don't send sensitive data to frontend
         response_config = {
@@ -613,12 +620,12 @@ def get_config():
                 'login_url': config.get('auth', {}).get('login_url', ''),
                 'client_id': config.get('auth', {}).get('client_id', ''),
                 'client_secret': config.get('auth', {}).get('client_secret', ''),
-                'api_version': config.get('auth', {}).get('api_version', 'v62.0')
+                'api_version': config.get('auth', {}).get('api_version', 'v63.0')
             },
             'ml_model': config.get('ml_model', DEFAULT_ML_MODEL),
             'datacloud_connector_name': config.get('datacloud_connector_name', 'ContactIngestion'),
             'datacloud_object_name': config.get('datacloud_object_name', 'LeadRecord'),
-            'schema': config.get('schema', {})
+            'schema': schema
         }
         
         return jsonify(response_config)
@@ -691,10 +698,15 @@ def reset_config():
 
 @app.route('/api/schema', methods=['GET'])
 def get_schema():
-    """Get current schema configuration"""
+    """Get current schema configuration or default schema"""
     try:
         config = load_user_config()
-        schema = config.get('schema', get_default_schema())
+        schema = config.get('schema', {}) if config else {}
+        
+        # If no schema exists, return the default one
+        if not schema:
+            schema = get_default_schema()
+        
         return jsonify(schema)
     except Exception as e:
         return jsonify({'error': str(e)}), 500

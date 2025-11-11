@@ -23,7 +23,7 @@
           },
           "Email": {
             "type": "string",
-            "description": "Es el correo electrónico del lead. Es la tercera columna en la tabla. El idioma será Español."
+            "description": "Es el correo electrónico del lead. Es la tercera columna en la tabla. El idioma será Español. No puede contener espacios en blanco."
           },
           "Date": {
             "type": "string",

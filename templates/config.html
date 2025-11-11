@@ -703,18 +703,29 @@
             }
             
             try {
+                // Get default schema from the server
+                let defaultSchema = {};
+                try {
+                    const schemaResponse = await fetch('/api/schema');
+                    if (schemaResponse.ok) {
+                        defaultSchema = await schemaResponse.json();
+                    }
+                } catch (e) {
+                    console.log('Could not load default schema:', e);
+                }
+                
                 // Create with default configuration
                 const defaultConfig = {
                     auth: {
                         login_url: '',
                         client_id: '',
                         client_secret: '',
-                        api_version: 'v62.0'
+                        api_version: 'v63.0'
                     },
                     ml_model: 'llmgateway__VertexAIGemini20Flash001',
                     datacloud_connector_name: 'ContactIngestion',
                     datacloud_object_name: 'LeadRecord',
-                    schema: {}
+                    schema: defaultSchema
                 };
                 
                 const response = await fetch(`/api/orgs/${orgName}`, {
