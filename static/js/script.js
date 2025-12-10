@@ -270,7 +270,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Use query parameter to indicate return destination
             const redirectUri = `${window.location.origin}/auth/callback?from=home`;
-            const authUrl = `${authInfo.loginUrl}/services/oauth2/authorize?` +
+            
+            // Ensure loginUrl has https:// protocol
+            let salesforceUrl = authInfo.loginUrl;
+            if (!salesforceUrl.startsWith('http://') && !salesforceUrl.startsWith('https://')) {
+                salesforceUrl = 'https://' + salesforceUrl;
+            }
+            
+            const authUrl = `${salesforceUrl}/services/oauth2/authorize?` +
                 `response_type=code&` +
                 `client_id=${encodeURIComponent(authInfo.clientId)}&` +
                 `redirect_uri=${encodeURIComponent(redirectUri)}&` +

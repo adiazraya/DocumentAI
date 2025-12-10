@@ -640,8 +640,14 @@
                 // Store code_verifier in sessionStorage
                 sessionStorage.setItem('pkce_code_verifier', codeVerifier);
                 
+                // Ensure loginUrl has https:// protocol
+                let salesforceUrl = data.loginUrl;
+                if (!salesforceUrl.startsWith('http://') && !salesforceUrl.startsWith('https://')) {
+                    salesforceUrl = 'https://' + salesforceUrl;
+                }
+                
                 const redirectUri = encodeURIComponent(`${window.location.origin}/auth/callback`);
-                const authUrl = `https://${data.loginUrl}/services/oauth2/authorize?response_type=code&client_id=${data.clientId}&redirect_uri=${redirectUri}&scope=api%20cdp_query_api%20cdp_profile_api&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+                const authUrl = `${salesforceUrl}/services/oauth2/authorize?response_type=code&client_id=${data.clientId}&redirect_uri=${redirectUri}&scope=api%20cdp_query_api%20cdp_profile_api&code_challenge=${codeChallenge}&code_challenge_method=S256`;
                 
                 window.location.href = authUrl;
             } catch (error) {
