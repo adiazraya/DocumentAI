@@ -232,22 +232,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Generate PKCE challenge
-            function generateRandomString(length) {
-                const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-                let result = '';
-                const values = new Uint8Array(length);
-                crypto.getRandomValues(values);
-                for (let i = 0; i < length; i++) {
-                    result += charset[values[i] % charset.length];
-                }
-                return result;
-            }
-
-            async function sha256(plain) {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(plain);
-                return await crypto.subtle.digest('SHA-256', data);
+            // Generate PKCE challenge using base64url encoding
+            function generateCodeVerifier() {
+                const array = new Uint8Array(32);
+                crypto.getRandomValues(array);
+                return base64urlencode(array);
             }
 
             function base64urlencode(buffer) {
@@ -262,9 +251,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     .replace(/=+$/, '');
             }
 
-            const codeVerifier = generateRandomString(128);
-            const hashed = await sha256(codeVerifier);
-            const codeChallenge = base64urlencode(hashed);
+            async function sha256(plain) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(plain);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                return base64urlencode(hashBuffer);
+            }
+
+            const codeVerifier = generateCodeVerifier();
+            const codeChallenge = await sha256(codeVerifier);
 
             sessionStorage.setItem('pkce_code_verifier', codeVerifier);
 
