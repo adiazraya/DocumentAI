@@ -365,8 +365,12 @@ def auth_exchange():
     if not login_url or not client_id or not client_secret:
         return "Incomplete auth configuration for current org", 400
 
+    # Ensure login_url has https:// protocol
+    if not login_url.startswith('http://') and not login_url.startswith('https://'):
+        login_url = 'https://' + login_url
+    
     redirect_uri = f"{request.url_root.rstrip('/')}/auth/callback"
-    token_url = f"https://{login_url}/services/oauth2/token"
+    token_url = f"{login_url}/services/oauth2/token"
     payload = {
         "grant_type": "authorization_code",
         "code": code,
